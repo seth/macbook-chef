@@ -69,6 +69,12 @@ bash "make homebrew a git repo" do
   group usergroup
 end
 
+execute "update homebrew package repository" do
+  command "/usr/local/bin/brew update"
+  user username
+  group usergroup
+end
+
 node[:macbook][:brew][:packages].each do |p|
   execute "install homebrew package #{p}" do
     command "/usr/local/bin/brew install #{p}"
@@ -77,22 +83,16 @@ node[:macbook][:brew][:packages].each do |p|
   end
 end
 
-bash "install CPAN easier alternative" do
-  code <<-EOH
-  wget http://github.com/miyagawa/cpanminus/raw/master/cpanm
-  chmod +x cpanm
-  EOH
-  cwd "/usr/local/bin"
-  user username
+directory "#{ENV['HOME']}/bin" do
+  owner username
   group usergroup
-  not_if "test -e /usr/local/bin/cpanm"
+  mode "0755"
 end
 
-node[:macbook][:perl_modules].each do |pm|
-  execute "install Perl module '#{pm}'" do
-    command "/usr/local/bin/cpanm #{pm}"
-    cwd "#{ENV['HOME']}"
-    user username
-    group usergroup
-  end
+cookbook_file "#{ENV['HOME']}/bin/jspp" do
+  source "jspp"
+  owner username
+  group usergroup
+  mode "0755"
 end
+
