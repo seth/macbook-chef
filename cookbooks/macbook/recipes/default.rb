@@ -17,26 +17,24 @@
 # limitations under the License.
 #
 
-username = node[:login_name]
-usergroup = username
+username = node[:login_name] || node[:current_user]
+user_uid = node[:etc][:passwd][username]["uid"]
+user_gid = node[:etc][:passwd][username]["gid"]
 
 directory "/usr/local"  do
   owner username
-  group usergroup
+  group user_gid
   mode "0755"
   action :create
   not_if "test -d /usr/local"
 end
 
 execute "ensure /usr/local permissions" do
-  command "chown -R #{username}:#{usergroup} /usr/local"
+  command "chown -R #{username}:#{user_gid} /usr/local"
   not_if do
-    uname, p, uid, gid = %x(id -P #{username}).chomp.split(":")
-    uid = uid.to_i
-    gid = gid.to_i
     user_owned = Dir["/usr/local/*/"].inject(true) do |acc, d|
       s = File.stat(d)
-      acc && s.uid == uid && s.gid == gid
+      acc && s.uid == user_uid && s.gid == user_gid
     end
     user_owned
   end
@@ -44,7 +42,7 @@ end
 
 bash "install homebrew" do
   user username
-  group usergroup
+  group user_gid
   code <<-EOH
   curl -Lsf #{node[:macbook][:brew][:url]} | tar -xvz -C/usr/local --strip 1
   EOH
@@ -55,7 +53,7 @@ end
 execute "brew install git" do
   command "/usr/local/bin/brew install git"
   user username
-  group usergroup
+  group user_gid
 end
 
 bash "make homebrew a git repo" do
@@ -66,33 +64,33 @@ bash "make homebrew a git repo" do
   EOH
   not_if "test -d /usr/local/.git"
   user username
-  group usergroup
+  group user_gid
 end
 
 execute "update homebrew package repository" do
   command "/usr/local/bin/brew update"
   user username
-  group usergroup
+  group user_gid
 end
 
 node[:macbook][:brew][:packages].each do |p|
   execute "install homebrew package #{p}" do
     command "/usr/local/bin/brew install #{p}"
     user username
-    group usergroup
+    group user_gid
   end
 end
 
 directory "#{ENV['HOME']}/bin" do
   owner username
-  group usergroup
+  group user_gid
   mode "0755"
 end
 
 cookbook_file "#{ENV['HOME']}/bin/jspp" do
   source "jspp"
   owner username
-  group usergroup
+  group user_gid
   mode "0755"
 end
 

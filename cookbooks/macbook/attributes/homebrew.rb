@@ -1,4 +1,5 @@
-default[:login_name] = "seth"
+# use this user if set, otherwise use the node's current_user attribute
+default[:login_name] = nil
 
 default[:macbook][:brew][:tarball] = "http://github.com/mxcl/homebrew/tarball/master"
 default[:macbook][:brew][:git_url] = "http://github.com/mxcl/homebrew.git"
