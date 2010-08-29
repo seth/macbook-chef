@@ -21,6 +21,13 @@ username = node[:login_name] || node[:current_user]
 user_uid = node[:etc][:passwd][username]["uid"]
 user_gid = node[:etc][:passwd][username]["gid"]
 
+bag = data_bag_item("users", username)
+email = if node[:is_work_system]
+          bag["work_email"]
+        else
+          bag["home_email"]
+        end
+
 directory "/usr/local"  do
   owner username
   group user_gid
@@ -67,6 +74,16 @@ bash "make homebrew a git repo" do
   group user_gid
 end
 
+template "#{ENV['HOME']}/.gitconfig" do
+  source "dot-gitconfig"
+  owner username
+  group user_gid
+  variables(:email => email,
+            :github_user => bag["github_user"],
+            :github_token => bag["github_token"]
+            )
+end
+
 execute "update homebrew package repository" do
   command "/usr/local/bin/brew update"
   user username
@@ -94,3 +111,50 @@ cookbook_file "#{ENV['HOME']}/bin/jspp" do
   mode "0755"
 end
 
+node[:macbook][:perl][:packages].each do |p|
+  # running these as root because some modules, like MIME:Base64
+  # install docs to /usr/share/man/... :-(
+  # the result is some root owned stuff in /Library/Perl
+  # and in /usr/local/
+  execute "install Perl module #{p}" do
+    command "cpanm #{p}"
+  end
+end
+
+if bag.has_key?("repos")
+  bag["repos"].each do |target, repo|
+    dest = "#{node[:macbook][:repo_dir]}/#{target}"
+    if !File.exist?(dest)
+      git "#{node[:macbook][:repo_dir]}/#{target}" do
+        repository repo
+        reference "HEAD"
+        action :sync
+        user username
+        group user_gid
+      end
+    else
+      # we don't use the git resource for keeping up-to-date
+      # because it forces a reset to remote HEAD and we want
+      # to pull and not loose local commits.
+      execute "update git repo at #{target}" do
+        command "git pull"
+        user username
+        group user_gid
+        cwd dest
+      end
+    end
+  end
+end
+
+# update dot files.  The dot files that are managed live in a git
+# repo in dot_file_dir and there is a script linkdots.rb that
+# symlinks all files matching dot-FOO to ~/.FOO.
+#
+if bag.has_key?("dot_file_cmd")
+  execute "symlink dot files" do
+    command bag['dot_file_cmd']
+    user username
+    group user_gid
+    cwd ENV['HOME']
+  end
+end
