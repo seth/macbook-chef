@@ -13,8 +13,8 @@ default[:macbook][:brew][:packages] = %w{
   ack
   aspell
   coreutils
-  ctags
   cpanminus
+  ctags
   dos2unix
   gist
   git
@@ -22,9 +22,13 @@ default[:macbook][:brew][:packages] = %w{
   htop
   jsawk
   mg
+  moreutils
   nginx
   ngrep
+  openssl
+  readline
   resty
+  socat
   tmux
   tree
   wget

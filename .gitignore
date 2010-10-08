@@ -1,3 +1,6 @@
 .rake_test_cache
 
 .chef
+metadata.json
+data_bags
+client-config

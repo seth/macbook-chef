@@ -21,6 +21,9 @@ username = node[:login_name] || node[:current_user]
 user_uid = node[:etc][:passwd][username]["uid"]
 user_gid = node[:etc][:passwd][username]["gid"]
 
+Chef::Log.info "username: #{username}"
+Chef::Log.info "user_gid: #{user_gid}"
+
 bag = data_bag_item("users", username)
 email = if node[:is_work_system]
           bag["work_email"]
@@ -158,3 +161,5 @@ if bag.has_key?("dot_file_cmd")
     cwd ENV['HOME']
   end
 end
+
+include_recipe "macbook::ruby"
