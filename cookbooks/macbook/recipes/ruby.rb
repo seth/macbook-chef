@@ -32,6 +32,7 @@ bash "updating rvm to the latest stable version" do
   code "#{rvm_init} && rvm update --head > ~/.rvm-update.log 2>&1"
 end
 
+ruby_path = "ruby"
 bash "installing ruby" do
   user username
   group user_gid
@@ -42,14 +43,14 @@ bash "installing ruby" do
     # rvm install exits 0 even if build fails :-(
     rvm list |grep -q #{DEFAULT_RUBY_VERSION}
   EOH
-  not_if "#{rvm_init} && rvm list|grep -q '#{DEFAULT_RUBY_VERSION}'"
+  not_if "test -f #{ENV['HOME']}/.rvm/rubies/ruby-#{DEFAULT_RUBY_VERSION}/bin/ruby"
 end
 
 bash "set default rvm ruby" do
   user username
   group user_gid
   code "#{rvm_init} && rvm use #{DEFAULT_RUBY_VERSION} --default"
-  not_if "#{rvm_init} && which ruby|grep -q rvm"
+  not_if "test -ef #{ENV['HOME']}/.rvm/bin/default_ruby #{ENV['HOME']}/.rvm/wrappers/ruby-#{DEFAULT_RUBY_VERSION}/ruby"
 end
 
 cookbook_file "#{ENV['HOME']}/.rvm/gemsets/default.gems" do
